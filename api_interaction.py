@@ -32,7 +32,7 @@ class IntermediateTrack:
 @app.route('/', methods=['GET'])
 def default():
     url = (f'https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_APP_ID}'
-           f'&redirect_uri={DEEZER_REDIRECT_URI}&perms=basic_access,email')
+           f'&redirect_uri={DEEZER_REDIRECT_URI}&perms=manage_library,email')
     return redirect(url)
 
 
@@ -95,6 +95,33 @@ def get_playlists():
     return playlists
 
 
+# Add playlist
+def add_playlist(playlist_title):
+    # Get user id
+    response = requests.get(f'https://api.deezer.com/user/me', {'access_token': login_access_token})
+    response = response.json()
+    user_id = response['id']
+
+    # Post track into user playlist
+    response = requests.post(fr'https://api.deezer.com/user/{user_id}/playlists',
+                             {'access_token': login_access_token,
+                              'title': playlist_title,
+                              'request_method': 'POST'})
+    response = response.json()
+    return response
+
+
+# Add track to playlist
+def add_track(playlist_id, track_id):
+    # Post track into user playlist
+    response = requests.post(fr'https://api.deezer.com/playlist/{playlist_id}/tracks',
+                             {'access_token': login_access_token,
+                              'songs': track_id,
+                              'request_method': 'POST'})
+    response = response.json()
+    return response
+
+
 # Search track
 def search_track(track_info):
     search_info = ''
@@ -103,7 +130,7 @@ def search_track(track_info):
 
     # Get JSON object (dictionary) for searching track
     response = requests.get(f'https://api.deezer.com/search/?q={search_info}', {'access_token': login_access_token})
-    response = response.json()
+    response = response.text()
 
     return response
 
@@ -125,8 +152,14 @@ def get_info():
     print(result)
 
     # TEST for searching tracks
-    track_info = {'track': 'Our Story', 'artist': 'Mako'}
-    return search_track(track_info)
+    track_info = {'track': 'Stay', 'artist': 'Cheat Codes'}
+
+    # TEST for adding track
+    track_id = '3135556'
+
+    # TEST for adding playlist
+    res = add_playlist('test123')
+    return res
 
 
 # Add: search tracks, create playlist, add tracks into playlist, exception handler (if cannot do something).
