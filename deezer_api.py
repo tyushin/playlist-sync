@@ -38,13 +38,13 @@ class DeezerHandler:
         self.log = f'Create Datetime - \"{date}\"\n'
 
         # Settings variables for my application (Setup on official Deezer site)
-        self.logging(f'INFO:\t Initialized settings variables for deezer application')
+        self.logging('INFO:\t Initialized settings variables for deezer application')
         self.deezer_app_id = settings.get('application', 'deezer_app_id')
         self.deezer_app_secret = settings.get('application', 'deezer_app_secret')
         self.deezer_redirect_uri = settings.get('application', 'deezer_redirect_uri')
 
         # Settings variables for socket listener
-        self.logging(f'INFO:\t Initialized settings variables for socket listener')
+        self.logging('INFO:\t Initialized settings variables for socket listener')
         self.host = settings.get('socket', 'host')
         self.port = int(settings.get('socket', 'port'))
 
@@ -80,20 +80,20 @@ class DeezerHandler:
         :return: access_token
         """
 
-        self.logging(f'INFO:\t Getting user access token')
-        self.logging(f'INFO:\t Redirecting to registration link')
+        self.logging('INFO:\t Getting user access token')
+        self.logging('INFO:\t Redirecting to registration link')
         url = (f'https://connect.deezer.com/oauth/auth.php?app_id={self.deezer_app_id}'
                f'&redirect_uri={self.deezer_redirect_uri}&perms=manage_library,email')
         webbrowser.open_new_tab(url)
-        self.logging(f'INFO:\t Opening a socket to accept a response')
+        self.logging('INFO:\t Opening a socket to accept a response')
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.host, self.port))
             s.listen(1)
             conn, addr = s.accept()
             data = conn.recv(64)
-        self.logging(f'INFO:\t Getting code of response')
+        self.logging('INFO:\t Getting code of response')
         code = str(data).split(' ')[1].split('=')[1]
-        self.logging(f'INFO:\t Trying to get an access token')
+        self.logging('INFO:\t Trying to get an access token')
         url = (f'https://connect.deezer.com/oauth/access_token.php?app_id={self.deezer_app_id}'
                f'&secret={self.deezer_app_secret}&code={code}&output=json')
         response = requests.get(url)
@@ -122,7 +122,7 @@ class DeezerHandler:
         response = response.json()
 
         tracklist = []
-        self.logging(f'INFO:\t Creating an IntermediateTrack model for each track in the response dictionary')
+        self.logging('INFO:\t Creating an IntermediateTrack model for each track in the response dictionary')
         for element in response['data']:
             track = IntermediateTrack(element['id'], element['title'], element['album']['title'],
                                       element['artist']['name'])
@@ -137,18 +137,18 @@ class DeezerHandler:
         :return: [IntermediatePlaylist]
         """
 
-        self.logging(f'INFO:\t Trying to get JSON object (dictionary) with list of user playlists')
+        self.logging('INFO:\t Trying to get JSON object (dictionary) with list of user playlists')
         response = requests.get(f'https://api.deezer.com/user/me/playlists', {'access_token': access_token})
         self.response_handler(response.status_code)
         response = response.json()
 
         playlists = []
-        self.logging(f'INFO:\t Creating an IntermediatePlaylist model for each playlist in dictionary')
+        self.logging('INFO:\t Creating an IntermediatePlaylist model for each playlist in dictionary')
         for element in response['data']:
             playlist = IntermediatePlaylist(element['id'], element['title'], [])
             playlists.append(playlist)
 
-        self.logging(f'INFO:\t Fill each playlist with tracks')
+        self.logging('INFO:\t Fill each playlist with tracks')
         for playlist in playlists:
             # Add list of tracks into IntermediatePlaylist model
             playlist.tracks = self.get_tracklist(playlist.playlist_id, access_token)
@@ -163,7 +163,7 @@ class DeezerHandler:
         :return: string_playlists
         """
 
-        self.logging(f'INFO:\t Converting list of IntermediatePlaylist model to string')
+        self.logging('INFO:\t Converting list of IntermediatePlaylist model to string')
         string_playlists = 'Playlists:\n'
         for playlist in playlists:
             string_playlists += f'Playlist title: {playlist.title}:\n'
@@ -182,7 +182,7 @@ class DeezerHandler:
         :param access_token:
         """
 
-        self.logging(f'INFO:\t Trying to get user ID')
+        self.logging('INFO:\t Trying to get user ID')
         response = requests.get(f'https://api.deezer.com/user/me', {'access_token': access_token})
         self.response_handler(response.status_code)
         response = response.json()
@@ -220,7 +220,7 @@ class DeezerHandler:
         """
 
         self.logging(f'INFO:\t Trying add playlist - \"{playlist.title}\"')
-        self.logging(f'INFO:\t Check for availability this playlist in user library')
+        self.logging('INFO:\t Check for availability this playlist in user library')
         available_playlists = self.get_playlists(access_token)
         exist_title = False
         for element in available_playlists:
@@ -232,7 +232,7 @@ class DeezerHandler:
             self.create_playlist(playlist.title, access_token)
             available_playlists = self.get_playlists(access_token)
 
-        self.logging(f'INFO:\t Trying to update the tracks in the playlist')
+        self.logging('INFO:\t Trying to update the tracks in the playlist')
         for element in available_playlists:
             if element.title == playlist.title:
                 for track in playlist.tracks:
@@ -253,14 +253,14 @@ class DeezerHandler:
         response = requests.get(f'https://api.deezer.com/search/?q={search_info}')
         self.response_handler(response.status_code)
         response = response.json()
-        self.logging(f'INFO:\t Trying to choose the required track')
+        self.logging('INFO:\t Trying to choose the required track')
         if response['total'] != 0:
             result_position = 0
             for position, element in enumerate(response['data']):
                 if track.title == element['title']:
                     result_position = position
                     break
-            self.logging(f'INFO:\t Track was found')
+            self.logging('INFO:\t Track was found')
             return response['data'][result_position]['id']
         else:
             self.logging(f'INFO:\t Track with title - \"{track.title}\", artist name - \"{track.artist_name}\",'
